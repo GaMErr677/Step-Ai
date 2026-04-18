@@ -277,16 +277,15 @@
             align-items: flex-end;
             gap: 8px;
             margin-bottom: 15px;
-        }
-
-        .chart-bar {
-            flex: 1;
+        }        .chart-bar {
+            flex: 0 1 auto;
             background: linear-gradient(180deg, #00d9ff 0%, #0099cc 100%);
-            border-radius: 8px 8px 0 0;
-            min-height: 20px;
-            position: relative;
-            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
             transition: all 0.3s ease;
+            cursor: pointer;
+            width: 100%;
+        }ransition: all 0.3s ease;
             opacity: 0.7;
         }
 
@@ -922,6 +921,7 @@
         function renderChart() {
             const today = new Date();
             const data = [];
+            const labels = [];
             let days = parseInt(currentPeriod);
 
             if (currentPeriod === '365') {
@@ -934,6 +934,7 @@
                         twoWeekTotal += dailySteps[dateStr] || 0;
                     }
                     data.push(twoWeekTotal);
+                    labels.push(''); // No labels for year view
                 }
             } else {
                 for (let i = days - 1; i >= 0; i--) {
@@ -941,6 +942,18 @@
                     date.setDate(date.getDate() - i);
                     const dateStr = date.toDateString();
                     data.push(dailySteps[dateStr] || 0);
+                    
+                    // Generate labels based on period
+                    if (currentPeriod === '1') {
+                        // For 1-day view, show the date
+                        labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    } else if (currentPeriod === '7') {
+                        // For 7-day view, show day of week
+                        labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                    } else {
+                        // For 30-day view, no labels
+                        labels.push('');
+                    }
                 }
             }
 
@@ -948,13 +961,35 @@
             const container = document.getElementById('chartContainer');
             container.innerHTML = '';
 
-            data.forEach((stepCount) => {
+            data.forEach((stepCount, index) => {
+                const barWrapper = document.createElement('div');
+                barWrapper.style.display = 'flex';
+                barWrapper.style.flexDirection = 'column';
+                barWrapper.style.alignItems = 'center';
+                barWrapper.style.flex = '1';
+                barWrapper.style.gap = '4px';
+                
                 const height = (stepCount / maxSteps) * 100;
                 const bar = document.createElement('div');
                 bar.className = 'chart-bar';
                 bar.style.height = height + '%';
                 bar.title = stepCount + ' steps';
-                container.appendChild(bar);
+                bar.style.width = '100%';
+                
+                barWrapper.appendChild(bar);
+                
+                // Add label if it exists
+                if (labels[index]) {
+                    const label = document.createElement('div');
+                    label.style.fontSize = '0.75rem';
+                    label.style.color = '#a0a0c0';
+                    label.style.textAlign = 'center';
+                    label.style.whiteSpace = 'nowrap';
+                    label.textContent = labels[index];
+                    barWrapper.appendChild(label);
+                }
+                
+                container.appendChild(barWrapper);
             });
 
             updateStats(data);
