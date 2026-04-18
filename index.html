@@ -36,21 +36,103 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a0a2e 0%, #16213e 100%);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #00d9ff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 10px;
+            color: #e0e0ff;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .modal-input::placeholder {
+            color: #a0a0c0;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            color: #0a0a0f;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:active {
+            transform: scale(0.98);
         }
 
         .header {
             text-align: center;
             margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             background: linear-gradient(135deg, #00d9ff 0%, #a78bfa 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 700;
             letter-spacing: -1px;
+        }
+
+        .username {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .username:hover {
+            background: rgba(0, 217, 255, 0.1);
+            color: #00d9ff;
         }
 
         .step-display {
@@ -104,6 +186,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+            margin-top: 15px;
         }
 
         .install-btn:active {
@@ -124,6 +207,7 @@
             background: rgba(0, 217, 255, 0.05);
             border-radius: 8px;
             margin-top: -10px;
+            display: none;
         }
 
         .button-group {
@@ -195,13 +279,6 @@
             transform: scaleY(1.05);
         }
 
-        .chart-label {
-            font-size: 0.75rem;
-            color: #a0a0c0;
-            text-align: center;
-            margin-top: 8px;
-        }
-
         .stats-row {
             display: flex;
             justify-content: space-between;
@@ -221,6 +298,51 @@
         .stats-value {
             color: #00d9ff;
             font-weight: 600;
+        }
+
+        .leaderboard-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.05);
+        }
+
+        .leaderboard-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #e0e0ff;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #00d9ff;
+        }
+
+        .leaderboard-rank {
+            font-weight: 700;
+            color: #00d9ff;
+            min-width: 30px;
+        }
+
+        .leaderboard-name {
+            color: #e0e0ff;
+            font-weight: 500;
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .leaderboard-steps {
+            color: #a0a0c0;
+            font-size: 0.9rem;
         }
 
         .pro-section {
@@ -287,16 +409,25 @@
     </style>
 </head>
 <body>
+    <div id="nameModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Welcome to StepAI</div>
+            <input type="text" id="nameInput" class="modal-input" placeholder="Enter your name" maxlength="20">
+            <button class="modal-btn" onclick="saveName()">Start Tracking</button>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>StepAI</h1>
+            <div class="username" id="usernameDisplay" onclick="changeName()">👤 You</div>
         </div>
 
         <div class="step-display">
             <div class="step-count" id="stepCount">0</div>
             <div class="step-label">steps today</div>
             <button class="install-btn" id="installBtn" onclick="requestInstall()">📱 Install App</button>
-            <div class="install-hint" id="installHint" style="display:none;">Tap Share → Add to Home Screen</div>
+            <div class="install-hint" id="installHint">Tap Share → Add to Home Screen</div>
         </div>
 
         <div class="history-section">
@@ -322,6 +453,11 @@
             </div>
         </div>
 
+        <div class="leaderboard-section">
+            <div class="leaderboard-title">🏆 All-Time Leaderboard</div>
+            <div id="leaderboard"></div>
+        </div>
+
         <div class="pro-section locked" id="proSection">
             <div class="pro-title">🤖 AI Coach</div>
             <div class="pro-message" id="proMessage">Use the app for 3 hours to unlock AI Coach</div>
@@ -335,17 +471,54 @@
         let steps = 0;
         let dailySteps = {};
         let currentPeriod = '1';
-        let lastAcceleration = 0;
-        let accelerationThreshold = 15;
-        let lastStepTime = 0;
-        let minStepInterval = 300;
+        let userName = localStorage.getItem('userName') || '';
+        let allTimeSteps = Number(localStorage.getItem('allTimeSteps')) || 0;
 
         let startTime = Date.now();
         let totalUsageTime = Number(localStorage.getItem('usageTime')) || 0;
         const PRO_UNLOCK_TIME = 10800000; // 3 hours in ms
 
+        // Advanced step detector state
+        const stepDetector = {
+            accelBuffer: [],
+            lastStepTime: 0,
+            minStepInterval: 250,
+            bufferSize: 10,
+            threshold: 0.5,
+            refractory: 400,
+            lastPeakTime: 0
+        };
+
+        // ==================== NAME MANAGEMENT ====================
+        function saveName() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (name) {
+                userName = name;
+                localStorage.setItem('userName', name);
+                document.getElementById('nameModal').style.display = 'none';
+                updateUsernameDisplay();
+            }
+        }
+
+        function changeName() {
+            document.getElementById('nameInput').value = userName;
+            document.getElementById('nameModal').style.display = 'flex';
+        }
+
+        function updateUsernameDisplay() {
+            document.getElementById('usernameDisplay').textContent = `👤 ${userName || 'You'}`;
+        }
+
         // ==================== INITIALIZATION ====================
         function init() {
+            if (!userName) {
+                document.getElementById('nameModal').style.display = 'flex';
+                document.getElementById('nameInput').focus();
+            } else {
+                document.getElementById('nameModal').style.display = 'none';
+                updateUsernameDisplay();
+            }
+
             loadData();
             requestMotionPermission();
             setupMotionListener();
@@ -353,6 +526,7 @@
             updateUI();
             checkProUnlock();
             renderChart();
+            renderLeaderboard();
         }
 
         function loadData() {
@@ -370,9 +544,10 @@
             const today = new Date().toDateString();
             dailySteps[today] = steps;
             localStorage.setItem('dailySteps', JSON.stringify(dailySteps));
+            localStorage.setItem('allTimeSteps', allTimeSteps);
         }
 
-        // ==================== MOTION DETECTION ====================
+        // ==================== ADVANCED STEP DETECTION ====================
         async function requestMotionPermission() {
             if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
                 try {
@@ -381,35 +556,68 @@
                         document.getElementById('installHint').style.display = 'none';
                     }
                 } catch (error) {
-                    console.log('Motion permission denied or not available');
+                    console.log('Motion permission denied');
                 }
             }
         }
 
         function setupMotionListener() {
             if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', handleMotion);
+                window.addEventListener('devicemotion', handleAdvancedMotion);
             }
         }
 
-        function handleMotion(event) {
+        function handleAdvancedMotion(event) {
             const acc = event.accelerationIncludingGravity;
             if (!acc) return;
 
+            // Calculate magnitude
             const magnitude = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
-            const delta = Math.abs(magnitude - lastAcceleration);
-
-            if (delta > accelerationThreshold) {
-                const now = Date.now();
-                if (now - lastStepTime > minStepInterval) {
-                    steps++;
-                    lastStepTime = now;
-                    updateUI();
-                    saveData();
-                }
+            
+            // Add to buffer
+            stepDetector.accelBuffer.push(magnitude);
+            if (stepDetector.accelBuffer.length > stepDetector.bufferSize) {
+                stepDetector.accelBuffer.shift();
             }
 
-            lastAcceleration = magnitude;
+            // Need minimum buffer
+            if (stepDetector.accelBuffer.length < stepDetector.bufferSize) return;
+
+            // Calculate statistics
+            const mean = stepDetector.accelBuffer.reduce((a, b) => a + b) / stepDetector.accelBuffer.length;
+            const variance = stepDetector.accelBuffer.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / stepDetector.accelBuffer.length;
+            const stdDev = Math.sqrt(variance);
+
+            // Detect peaks (steps)
+            const current = stepDetector.accelBuffer[stepDetector.accelBuffer.length - 1];
+            const isPeak = current > mean + (stepDetector.threshold * stdDev);
+
+            if (isPeak) {
+                const now = Date.now();
+                
+                // Check refractory period
+                if (now - stepDetector.lastPeakTime > stepDetector.refractory) {
+                    // Check for consistent rhythm
+                    if (stepDetector.lastStepTime > 0) {
+                        const interval = now - stepDetector.lastStepTime;
+                        // Accept if interval is reasonable (0.3s to 2s per step)
+                        if (interval > 300 && interval < 2000) {
+                            recordStep(now);
+                        }
+                    } else {
+                        recordStep(now);
+                    }
+                    stepDetector.lastPeakTime = now;
+                }
+            }
+        }
+
+        function recordStep(now) {
+            steps++;
+            allTimeSteps++;
+            stepDetector.lastStepTime = now;
+            updateUI();
+            saveData();
         }
 
         // ==================== TIMER ====================
@@ -455,13 +663,13 @@
 
             let message = '';
             if (todaySteps > avgSteps * 1.2) {
-                message = '🚀 Outstanding! You\'re crushing your goals today!';
+                message = `🚀 ${userName}, you're crushing it! ${todaySteps} steps is outstanding!`;
             } else if (todaySteps > avgSteps) {
-                message = '💪 Great pace! You\'re above your average.';
+                message = `💪 Great pace, ${userName}! You're ${Math.round((todaySteps / avgSteps - 1) * 100)}% above your average.`;
             } else if (todaySteps > 0) {
-                message = '🎯 Keep moving! Every step counts.';
+                message = `🎯 Keep moving, ${userName}! Every step counts toward your goals.`;
             } else {
-                message = '👟 Time to get moving! Start your day.';
+                message = `👟 Time to get moving, ${userName}! Let's start your day.`;
             }
 
             const insights = document.getElementById('aiInsights');
@@ -487,7 +695,6 @@
             let days = parseInt(currentPeriod);
 
             if (currentPeriod === '365') {
-                // For year view: show 2-week intervals (26 bars)
                 for (let i = 25; i >= 0; i--) {
                     let twoWeekTotal = 0;
                     for (let j = 0; j < 14; j++) {
@@ -499,7 +706,6 @@
                     data.push(twoWeekTotal);
                 }
             } else {
-                // For other views: show daily
                 for (let i = days - 1; i >= 0; i--) {
                     const date = new Date(today);
                     date.setDate(date.getDate() - i);
@@ -512,7 +718,7 @@
             const container = document.getElementById('chartContainer');
             container.innerHTML = '';
 
-            data.forEach((stepCount, index) => {
+            data.forEach((stepCount) => {
                 const height = (stepCount / maxSteps) * 100;
                 const bar = document.createElement('div');
                 bar.className = 'chart-bar';
@@ -534,6 +740,25 @@
             document.getElementById('totalSteps').textContent = total.toLocaleString() + ' steps';
         }
 
+        // ==================== LEADERBOARD ====================
+        function renderLeaderboard() {
+            const leaderboard = document.getElementById('leaderboard');
+            const leaders = [
+                { name: userName || 'You', steps: allTimeSteps }
+            ];
+
+            // Sort and display
+            leaders.sort((a, b) => b.steps - a.steps);
+
+            leaderboard.innerHTML = leaders.map((leader, index) => `
+                <div class="leaderboard-item">
+                    <span class="leaderboard-rank">#${index + 1}</span>
+                    <span class="leaderboard-name">${leader.name}</span>
+                    <span class="leaderboard-steps">${leader.steps.toLocaleString()} steps</span>
+                </div>
+            `).join('');
+        }
+
         // ==================== INSTALL ====================
         let deferredPrompt;
 
@@ -546,7 +771,7 @@
         function requestInstall() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
+                deferredPrompt.userChoice.then(() => {
                     deferredPrompt = null;
                 });
             } else {
