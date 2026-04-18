@@ -594,11 +594,12 @@
         const stepDetector = {
             accelBuffer: [],
             lastStepTime: 0,
-            minStepInterval: 250,
-            bufferSize: 10,
-            threshold: 0.5,
-            refractory: 400,
-            lastPeakTime: 0
+            minStepInterval: 240,
+            bufferSize: 12,
+            threshold: 1.2,
+            refractory: 180,
+            lastPeakTime: 0,
+            kalmanState: null
         };
 
         // ==================== NAME MANAGEMENT ====================
@@ -797,6 +798,27 @@
             }
         }
 
+        // Kalman filter for noise reduction
+        function kalmanFilter(measurement, estimate, estimateError, measurementError) {
+            const kalmanGain = estimateError / (estimateError + measurementError);
+            const newEstimate = estimate + kalmanGain * (measurement - estimate);
+            const newEstimateError = (1 - kalmanGain) * estimateError;
+            return { estimate: newEstimate, error: newEstimateError };
+        }
+
+        function detectCadence(buffer) {
+            if (buffer.length < 20) return null;
+            let maxCorr = 0, bestLag = 0;
+            for (let lag = 8; lag < buffer.length / 2; lag++) {
+                let corr = 0;
+                for (let i = 0; i < buffer.length - lag; i++) {
+                    corr += buffer[i] * buffer[i + lag];
+                }
+                if (corr > maxCorr) { maxCorr = corr; bestLag = lag; }
+            }
+            return bestLag > 0 ? 60 / bestLag : null;
+        }
+
         function setupMotionListener() {
             if (window.DeviceMotionEvent) {
                 window.addEventListener('devicemotion', handleAdvancedMotion);
@@ -809,7 +831,14 @@
 
             const magnitude = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
             
-            stepDetector.accelBuffer.push(magnitude);
+            // Apply Kalman filter
+            if (!stepDetector.kalmanState) {
+                stepDetector.kalmanState = { estimate: magnitude, error: 2 };
+            }
+            const filtered = kalmanFilter(magnitude, stepDetector.kalmanState.estimate, stepDetector.kalmanState.error, 0.8);
+            stepDetector.kalmanState = filtered;
+            
+            stepDetector.accelBuffer.push(filtered.estimate);
             if (stepDetector.accelBuffer.length > stepDetector.bufferSize) {
                 stepDetector.accelBuffer.shift();
             }
@@ -819,18 +848,18 @@
             const mean = stepDetector.accelBuffer.reduce((a, b) => a + b) / stepDetector.accelBuffer.length;
             const variance = stepDetector.accelBuffer.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / stepDetector.accelBuffer.length;
             const stdDev = Math.sqrt(variance);
+            const cadence = detectCadence(stepDetector.accelBuffer);
+            const isValidCadence = !cadence || (cadence > 0.8 && cadence < 3.5);
 
             const current = stepDetector.accelBuffer[stepDetector.accelBuffer.length - 1];
             const isPeak = current > mean + (stepDetector.threshold * stdDev);
 
-            if (isPeak) {
+            if (isPeak && isValidCadence) {
                 const now = Date.now();
-                
                 if (now - stepDetector.lastPeakTime > stepDetector.refractory) {
                     if (stepDetector.lastStepTime > 0) {
                         const interval = now - stepDetector.lastStepTime;
-                        // Improved interval detection: 250-2500ms for more accurate step counting
-                        if (interval > 250 && interval < 2500) {
+                        if (interval > 240 && interval < 2600) {
                             recordStep(now);
                         }
                     } else {
