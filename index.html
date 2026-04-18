@@ -486,11 +486,26 @@
             const data = [];
             let days = parseInt(currentPeriod);
 
-            for (let i = days - 1; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toDateString();
-                data.push(dailySteps[dateStr] || 0);
+            if (currentPeriod === '365') {
+                // For year view: show 2-week intervals (26 bars)
+                for (let i = 25; i >= 0; i--) {
+                    let twoWeekTotal = 0;
+                    for (let j = 0; j < 14; j++) {
+                        const date = new Date(today);
+                        date.setDate(date.getDate() - (i * 14 + j));
+                        const dateStr = date.toDateString();
+                        twoWeekTotal += dailySteps[dateStr] || 0;
+                    }
+                    data.push(twoWeekTotal);
+                }
+            } else {
+                // For other views: show daily
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toDateString();
+                    data.push(dailySteps[dateStr] || 0);
+                }
             }
 
             const maxSteps = Math.max(...data, 1000);
