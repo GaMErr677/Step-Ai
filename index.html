@@ -505,7 +505,7 @@
             <div class="step-count" id="stepCount">0</div>
             <div class="step-label">steps today</div>
             <div class="install-section">
-                <button class="install-btn" id="installBtn" onclick="handleInstall()">📱 Install App</button>
+                <button class="install-btn" id="installBtn">📱 Install App</button>
                 <div class="install-hint" id="installHint"></div>
             </div>
         </div>
@@ -659,6 +659,33 @@
             document.getElementById('installGuideModal').style.display = 'none';
         }
 
+        // ==================== EVENT LISTENERS ====================
+        function setupButtonListeners() {
+            const btn = document.getElementById('installBtn');
+            if (!btn) return;
+            
+            // Remove any existing listeners
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            const updatedBtn = document.getElementById('installBtn');
+            
+            // Add multiple event listeners for iOS compatibility
+            updatedBtn.addEventListener('click', handleInstall, false);
+            updatedBtn.addEventListener('touchend', handleInstall, false);
+            updatedBtn.addEventListener('touchstart', (e) => {
+                e.target.style.opacity = '0.8';
+            }, false);
+            updatedBtn.addEventListener('touchend', (e) => {
+                e.target.style.opacity = '1';
+            }, false);
+            
+            // Ensure button is clickable
+            updatedBtn.style.cursor = 'pointer';
+            updatedBtn.style.webkitUserSelect = 'none';
+            updatedBtn.style.userSelect = 'none';
+        }
+
         // ==================== INITIALIZATION ====================
         function init() {
             if (!userName) {
@@ -678,6 +705,7 @@
             renderChart();
             renderLeaderboard();
             updateInstallUI();
+            setupButtonListeners();
         }
 
         function loadData() {
