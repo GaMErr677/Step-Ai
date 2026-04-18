@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="StepAI">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a0f">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230a0a0f' width='180' height='180'/><text x='50%' y='50%' font-size='80' fill='%2300d9ff' text-anchor='middle' dy='.3em' font-weight='bold'>S</text></svg>">
+    <title>StepAI — Smart Step Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #16213e 100%);
+            color: #e0e0ff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #00d9ff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .step-display {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.1);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-count {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d9ff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+
+        .step-label {
+            font-size: 0.95rem;
+            color: #a0a0c0;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .install-btn {
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            color: #0a0a0f;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
+        }
+
+        .install-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(0, 217, 255, 0.2);
+        }
+
+        .install-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .install-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #a0a0c0;
+            padding: 12px;
+            background: rgba(0, 217, 255, 0.05);
+            border-radius: 8px;
+            margin-top: -10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-small {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0ff;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-small.active {
+            background: rgba(0, 217, 255, 0.2);
+            border-color: #00d9ff;
+            color: #00d9ff;
+        }
+
+        .btn-small:active {
+            transform: scale(0.98);
+        }
+
+        .history-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.05);
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #e0e0ff;
+        }
+
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, #00d9ff 0%, #0099cc 100%);
+            border-radius: 8px 8px 0 0;
+            min-height: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .chart-bar:hover {
+            opacity: 1;
+            transform: scaleY(1.05);
+        }
+
+        .chart-label {
+            font-size: 0.75rem;
+            color: #a0a0c0;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .stats-row:first-child {
+            border-top: none;
+        }
+
+        .stats-label {
+            color: #a0a0c0;
+        }
+
+        .stats-value {
+            color: #00d9ff;
+            font-weight: 600;
+        }
+
+        .pro-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.05);
+            transition: all 0.5s ease;
+        }
+
+        .pro-section.locked {
+            opacity: 0.6;
+        }
+
+        .pro-section.unlocked {
+            border-color: rgba(0, 217, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 217, 255, 0.2);
+        }
+
+        .pro-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #e0e0ff;
+        }
+
+        .pro-message {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            margin-bottom: 15px;
+        }
+
+        .ai-insights {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #e0e0ff;
+        }
+
+        .ai-insights p {
+            margin: 8px 0;
+        }
+
+        .time-display {
+            font-size: 0.85rem;
+            color: #a0a0c0;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-height: 700px) {
+            .container {
+                gap: 15px;
+            }
+            .step-display {
+                padding: 30px 20px;
+            }
+            .step-count {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>StepAI</h1>
+        </div>
+
+        <div class="step-display">
+            <div class="step-count" id="stepCount">0</div>
+            <div class="step-label">steps today</div>
+            <button class="install-btn" id="installBtn" onclick="requestInstall()">📱 Install App</button>
+            <div class="install-hint" id="installHint" style="display:none;">Tap Share → Add to Home Screen</div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-title">📊 Activity History</div>
+            <div class="button-group">
+                <button class="btn-small active" onclick="switchPeriod('1')">1D</button>
+                <button class="btn-small" onclick="switchPeriod('7')">7D</button>
+                <button class="btn-small" onclick="switchPeriod('30')">30D</button>
+                <button class="btn-small" onclick="switchPeriod('365')">1Y</button>
+            </div>
+            <div class="chart-container" id="chartContainer"></div>
+            <div class="stats-row">
+                <span class="stats-label">Average:</span>
+                <span class="stats-value" id="avgSteps">0 steps</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Peak Day:</span>
+                <span class="stats-value" id="peakSteps">0 steps</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">Total:</span>
+                <span class="stats-value" id="totalSteps">0 steps</span>
+            </div>
+        </div>
+
+        <div class="pro-section locked" id="proSection">
+            <div class="pro-title">🤖 AI Coach</div>
+            <div class="pro-message" id="proMessage">Use the app for 3 hours to unlock AI Coach</div>
+            <div class="ai-insights" id="aiInsights"></div>
+            <div class="time-display" id="timeDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        let steps = 0;
+        let dailySteps = {};
+        let currentPeriod = '1';
+        let lastAcceleration = 0;
+        let accelerationThreshold = 15;
+        let lastStepTime = 0;
+        let minStepInterval = 300;
+
+        let startTime = Date.now();
+        let totalUsageTime = Number(localStorage.getItem('usageTime')) || 0;
+        const PRO_UNLOCK_TIME = 10800000; // 3 hours in ms
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            loadData();
+            requestMotionPermission();
+            setupMotionListener();
+            setupTimerInterval();
+            updateUI();
+            checkProUnlock();
+            renderChart();
+        }
+
+        function loadData() {
+            const today = new Date().toDateString();
+            const stored = localStorage.getItem('dailySteps');
+            dailySteps = stored ? JSON.parse(stored) : {};
+            
+            if (!dailySteps[today]) {
+                dailySteps[today] = 0;
+            }
+            steps = dailySteps[today];
+        }
+
+        function saveData() {
+            const today = new Date().toDateString();
+            dailySteps[today] = steps;
+            localStorage.setItem('dailySteps', JSON.stringify(dailySteps));
+        }
+
+        // ==================== MOTION DETECTION ====================
+        async function requestMotionPermission() {
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceMotionEvent.requestPermission();
+                    if (permission === 'granted') {
+                        document.getElementById('installHint').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.log('Motion permission denied or not available');
+                }
+            }
+        }
+
+        function setupMotionListener() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', handleMotion);
+            }
+        }
+
+        function handleMotion(event) {
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+
+            const magnitude = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
+            const delta = Math.abs(magnitude - lastAcceleration);
+
+            if (delta > accelerationThreshold) {
+                const now = Date.now();
+                if (now - lastStepTime > minStepInterval) {
+                    steps++;
+                    lastStepTime = now;
+                    updateUI();
+                    saveData();
+                }
+            }
+
+            lastAcceleration = magnitude;
+        }
+
+        // ==================== TIMER ====================
+        function setupTimerInterval() {
+            setInterval(() => {
+                totalUsageTime += 1000;
+                localStorage.setItem('usageTime', totalUsageTime);
+                checkProUnlock();
+                updateTimeDisplay();
+            }, 1000);
+        }
+
+        function updateTimeDisplay() {
+            const hours = Math.floor(totalUsageTime / 3600000);
+            const minutes = Math.floor((totalUsageTime % 3600000) / 60000);
+            const timeStr = `${hours}h ${minutes}m used`;
+            const timeDisplay = document.getElementById('timeDisplay');
+            if (timeDisplay) {
+                timeDisplay.textContent = timeStr;
+            }
+        }
+
+        // ==================== PRO UNLOCK ====================
+        function checkProUnlock() {
+            if (totalUsageTime >= PRO_UNLOCK_TIME) {
+                const proSection = document.getElementById('proSection');
+                if (proSection.classList.contains('locked')) {
+                    proSection.classList.remove('locked');
+                    proSection.classList.add('unlocked');
+                    document.getElementById('proMessage').textContent = '🎉 You unlocked StepAI Pro!';
+                    generateAIInsights();
+                }
+            }
+        }
+
+        // ==================== AI INSIGHTS ====================
+        function generateAIInsights() {
+            const today = new Date().toDateString();
+            const todaySteps = dailySteps[today] || 0;
+            
+            const allSteps = Object.values(dailySteps);
+            const avgSteps = allSteps.length > 0 ? Math.round(allSteps.reduce((a, b) => a + b) / allSteps.length) : 0;
+
+            let message = '';
+            if (todaySteps > avgSteps * 1.2) {
+                message = '🚀 Outstanding! You\'re crushing your goals today!';
+            } else if (todaySteps > avgSteps) {
+                message = '💪 Great pace! You\'re above your average.';
+            } else if (todaySteps > 0) {
+                message = '🎯 Keep moving! Every step counts.';
+            } else {
+                message = '👟 Time to get moving! Start your day.';
+            }
+
+            const insights = document.getElementById('aiInsights');
+            insights.innerHTML = `<p>${message}</p>`;
+        }
+
+        // ==================== UI UPDATES ====================
+        function updateUI() {
+            document.getElementById('stepCount').textContent = steps.toLocaleString();
+            updateTimeDisplay();
+        }
+
+        function switchPeriod(period) {
+            currentPeriod = period;
+            document.querySelectorAll('.btn-small').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderChart();
+        }
+
+        function renderChart() {
+            const today = new Date();
+            const data = [];
+            let days = parseInt(currentPeriod);
+
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toDateString();
+                data.push(dailySteps[dateStr] || 0);
+            }
+
+            const maxSteps = Math.max(...data, 1000);
+            const container = document.getElementById('chartContainer');
+            container.innerHTML = '';
+
+            data.forEach((stepCount, index) => {
+                const height = (stepCount / maxSteps) * 100;
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = height + '%';
+                bar.title = stepCount + ' steps';
+                container.appendChild(bar);
+            });
+
+            updateStats(data);
+        }
+
+        function updateStats(data) {
+            const avg = Math.round(data.reduce((a, b) => a + b) / data.length);
+            const peak = Math.max(...data);
+            const total = data.reduce((a, b) => a + b);
+
+            document.getElementById('avgSteps').textContent = avg.toLocaleString() + ' steps';
+            document.getElementById('peakSteps').textContent = peak.toLocaleString() + ' steps';
+            document.getElementById('totalSteps').textContent = total.toLocaleString() + ' steps';
+        }
+
+        // ==================== INSTALL ====================
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+        });
+
+        function requestInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                });
+            } else {
+                document.getElementById('installHint').style.display = 'block';
+            }
+        }
+
+        // ==================== SERVICE WORKER ====================
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+
+        // ==================== START ====================
+        init();
+    </script>
+</body>
+</html>
