@@ -202,9 +202,13 @@
             box-shadow: 0 2px 8px rgba(0, 217, 255, 0.2);
         }
 
-        .install-btn:disabled {
+          .modal-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        #installGuideModal .modal-content {
+            position: relative;
         }
 
         .install-hint {
@@ -438,6 +442,59 @@
         </div>
     </div>
 
+    <div id="installGuideModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 380px; max-height: 90vh; overflow-y: auto;">
+            <button onclick="closeInstallGuide()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #00d9ff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            <div class="modal-title" style="margin-top: 10px;">📱 Add to Home Screen</div>
+            <div style="text-align: left; font-size: 0.9rem; color: #e0e0ff; line-height: 1.6;">
+                <div style="margin: 15px 0;">
+                    <div style="font-weight: 600; color: #00d9ff; margin-bottom: 8px;">Step 1: Tap the Share Button</div>
+                    <svg viewBox="0 0 200 300" style="width: 100%; max-width: 200px; margin: 10px 0;">
+                        <rect x="10" y="10" width="180" height="280" rx="20" fill="#1a1a2e" stroke="#00d9ff" stroke-width="2"/>
+                        <circle cx="100" cy="50" r="8" fill="#a0a0c0"/>
+                        <rect x="30" y="100" width="140" height="100" rx="5" fill="#2a2a4e" stroke="#a0a0c0" stroke-width="1"/>
+                        <text x="100" y="155" text-anchor="middle" font-size="12" fill="#a0a0c0">App Content</text>
+                        <g transform="translate(100, 240)">
+                            <rect x="-25" y="-8" width="50" height="16" rx="8" fill="#00d9ff"/>
+                            <text x="0" y="0" text-anchor="middle" font-size="10" fill="#0a0a0f" font-weight="bold">Share ⬆️</text>
+                        </g>
+                    </svg>
+                    <p style="font-size: 0.85rem; color: #a0a0c0;">Look for the Share button at the bottom center of Safari</p>
+                </div>
+                <div style="margin: 15px 0;">
+                    <div style="font-weight: 600; color: #00d9ff; margin-bottom: 8px;">Step 2: Scroll Down</div>
+                    <svg viewBox="0 0 200 200" style="width: 100%; max-width: 200px; margin: 10px 0;">
+                        <rect x="20" y="20" width="160" height="160" rx="10" fill="#1a1a2e" stroke="#00d9ff" stroke-width="2"/>
+                        <text x="100" y="50" text-anchor="middle" font-size="11" fill="#a0a0c0">Share Options</text>
+                        <line x1="30" y1="60" x2="170" y2="60" stroke="#a0a0c0" stroke-width="1"/>
+                        <text x="100" y="80" text-anchor="middle" font-size="10" fill="#a0a0c0">Copy</text>
+                        <text x="100" y="100" text-anchor="middle" font-size="10" fill="#a0a0c0">Share Sheet...</text>
+                        <text x="100" y="120" text-anchor="middle" font-size="10" fill="#a0a0c0">Scroll Down ⬇️</text>
+                        <text x="100" y="145" text-anchor="middle" font-size="11" fill="#00d9ff" font-weight="bold">Add to Home Screen</text>
+                    </svg>
+                    <p style="font-size: 0.85rem; color: #a0a0c0;">Scroll down in the share menu to find the option</p>
+                </div>
+                <div style="margin: 15px 0;">
+                    <div style="font-weight: 600; color: #00d9ff; margin-bottom: 8px;">Step 3: Tap "Add to Home Screen"</div>
+                    <svg viewBox="0 0 200 150" style="width: 100%; max-width: 200px; margin: 10px 0;">
+                        <rect x="20" y="20" width="160" height="110" rx="10" fill="#1a1a2e" stroke="#00d9ff" stroke-width="2"/>
+                        <text x="100" y="45" text-anchor="middle" font-size="11" fill="#a0a0c0">Add to Home Screen</text>
+                        <line x1="30" y1="55" x2="170" y2="55" stroke="#a0a0c0" stroke-width="1"/>
+                        <text x="100" y="75" text-anchor="middle" font-size="10" fill="#a0a0c0">StepAI</text>
+                        <rect x="40" y="85" width="120" height="30" rx="8" fill="#00d9ff"/>
+                        <text x="100" y="107" text-anchor="middle" font-size="11" fill="#0a0a0f" font-weight="bold">Add</text>
+                    </svg>
+                    <p style="font-size: 0.85rem; color: #a0a0c0;">Tap the blue "Add" button</p>
+                </div>
+                <div style="margin: 15px 0;">
+                    <div style="font-weight: 600; color: #00d9ff; margin-bottom: 8px;">✅ Done!</div>
+                    <p style="font-size: 0.85rem; color: #a0a0c0;">StepAI is now on your home screen. Tap it anytime to open the app!</p>
+                </div>
+            </div>
+            <button class="modal-btn" onclick="closeInstallGuide()" style="margin-top: 15px;">Got it!</button>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1>StepAI</h1>
@@ -585,7 +642,9 @@
         }
 
         function handleInstall() {
-            if (deferredPrompt) {
+            if (isIOSSafari()) {
+                document.getElementById('installGuideModal').style.display = 'flex';
+            } else if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
@@ -594,6 +653,10 @@
                     deferredPrompt = null;
                 });
             }
+        }
+
+        function closeInstallGuide() {
+            document.getElementById('installGuideModal').style.display = 'none';
         }
 
         // ==================== INITIALIZATION ====================
