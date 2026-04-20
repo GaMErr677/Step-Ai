@@ -601,6 +601,9 @@
         let startTime = Date.now();
         let totalUsageTime = Number(localStorage.getItem('usageTime')) || 0;
         const PRO_UNLOCK_TIME = 10800000; // 3 hours in ms
+        let motionPermissionGranted = localStorage.getItem('motionPermissionGranted') === 'true';
+        let motionListenerInitialized = false;
+        let backgroundSyncInitialized = false;
 
         // Advanced step detector state
         const stepDetector = {
@@ -615,7 +618,7 @@
         };
 
         // ==================== NAME MANAGEMENT ====================
-        function saveName() {
+        async function saveName() {
             try {
                 const nameInput = document.getElementById('nameInput');
                 if (!nameInput) {
@@ -626,12 +629,15 @@
                 if (name && name.length > 0) {
                     userName = name;
                     localStorage.setItem('userName', name);
+                    const permissionGranted = await requestMotionPermission();
+                    if (!permissionGranted) {
+                        return;
+                    }
                     const nameModal = document.getElementById('nameModal');
                     if (nameModal) {
                         nameModal.style.display = 'none';
                     }
                     updateUsernameDisplay();
-                    // Start the app
                     setupMotionListener();
                     setupTimerInterval();
                     updateUI();
@@ -785,17 +791,19 @@
 
         // ==================== INITIALIZATION ====================
         function init() {
-            if (!userName) {
+            const needsGesturePermission = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+
+            if (!userName || (needsGesturePermission && !motionPermissionGranted)) {
                 document.getElementById('nameModal').style.display = 'flex';
+                document.getElementById('nameInput').value = userName;
                 document.getElementById('nameInput').focus();
             } else {
                 document.getElementById('nameModal').style.display = 'none';
                 updateUsernameDisplay();
+                setupMotionListener();
             }
 
             loadData();
-            requestMotionPermission();
-            setupMotionListener();
             setupTimerInterval();
             updateUI();
             checkProUnlock();
@@ -827,15 +835,28 @@
 
         // ==================== ADVANCED STEP DETECTION ====================
         async function requestMotionPermission() {
-            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceMotionEvent.requestPermission();
-                    if (permission === 'granted') {
-                        console.log('Motion permission granted');
-                    }
-                } catch (error) {
-                    console.log('Motion permission denied');
+            if (typeof DeviceMotionEvent === 'undefined' || typeof DeviceMotionEvent.requestPermission !== 'function') {
+                motionPermissionGranted = true;
+                return true;
+            }
+
+            if (motionPermissionGranted) {
+                return true;
+            }
+
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                motionPermissionGranted = permission === 'granted';
+                localStorage.setItem('motionPermissionGranted', String(motionPermissionGranted));
+                if (!motionPermissionGranted) {
+                    alert('Motion access is required for step tracking. Please allow motion access and try again.');
                 }
+                return motionPermissionGranted;
+            } catch (error) {
+                motionPermissionGranted = false;
+                localStorage.setItem('motionPermissionGranted', 'false');
+                alert('Motion access was not granted. Please allow motion access and try again.');
+                return false;
             }
         }
 
@@ -952,11 +973,22 @@
         }
 
         function setupMotionListener() {
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', handleAdvancedMotion);
+            if (!backgroundSyncInitialized) {
+                backgroundSyncInitialized = true;
+                initializeBackgroundStepCounter();
             }
-            // Initialize background step counter
-            initializeBackgroundStepCounter();
+
+            if (motionListenerInitialized) {
+                return;
+            }
+
+            if (window.DeviceMotionEvent) {
+                if (typeof DeviceMotionEvent.requestPermission === 'function' && !motionPermissionGranted) {
+                    return;
+                }
+                window.addEventListener('devicemotion', handleAdvancedMotion);
+                motionListenerInitialized = true;
+            }
         }
 
         function handleAdvancedMotion(event) {
