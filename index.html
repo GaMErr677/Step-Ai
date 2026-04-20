@@ -610,15 +610,15 @@
         const stepDetector = {
             accelBuffer: [],
             lastStepTime: 0,
-            minStepInterval: 320,
-            bufferSize: 18,
-            threshold: 1.6,
-            refractory: 280,
+            minStepInterval: 260,
+            bufferSize: 14,
+            threshold: 1.28,
+            refractory: 220,
             lastPeakTime: 0,
             kalmanState: null,
-            motionFloor: 0.18,
-            minStdDev: 0.12,
-            minAmplitude: 0.35
+            motionFloor: 0.06,
+            minStdDev: 0.08,
+            minAmplitude: 0.18
         };
 
         // ==================== NAME MANAGEMENT ====================
@@ -1003,21 +1003,22 @@
         function handleAdvancedMotion(event) {
             const linearAcc = event.acceleration;
             const gravityAcc = event.accelerationIncludingGravity;
-            if (!linearAcc && !gravityAcc) return;
+            const hasLinearAcc = linearAcc && [linearAcc.x, linearAcc.y, linearAcc.z].every(v => typeof v === 'number');
+            const hasGravityAcc = gravityAcc && [gravityAcc.x, gravityAcc.y, gravityAcc.z].every(v => typeof v === 'number');
 
-            const source = linearAcc && [linearAcc.x, linearAcc.y, linearAcc.z].every(v => typeof v === 'number')
-                ? linearAcc
-                : gravityAcc;
+            if (!hasLinearAcc && !hasGravityAcc) return;
 
-            if (!source) return;
+            const linearMagnitude = hasLinearAcc
+                ? Math.sqrt((linearAcc.x || 0) ** 2 + (linearAcc.y || 0) ** 2 + (linearAcc.z || 0) ** 2)
+                : 0;
+            const gravityMagnitude = hasGravityAcc
+                ? Math.sqrt((gravityAcc.x || 0) ** 2 + (gravityAcc.y || 0) ** 2 + (gravityAcc.z || 0) ** 2)
+                : 0;
 
-            let magnitude = Math.sqrt((source.x || 0) ** 2 + (source.y || 0) ** 2 + (source.z || 0) ** 2);
+            const useLinearAcc = hasLinearAcc && linearMagnitude > 0.08;
+            const magnitude = useLinearAcc ? linearMagnitude : gravityMagnitude;
 
-            if (source === gravityAcc) {
-                magnitude = Math.abs(magnitude - 9.81);
-            }
-
-            if (magnitude < stepDetector.motionFloor) {
+            if (!Number.isFinite(magnitude) || magnitude <= 0) {
                 return;
             }
             
@@ -1056,7 +1057,7 @@
                 if (now - stepDetector.lastPeakTime > stepDetector.refractory) {
                     if (stepDetector.lastStepTime > 0) {
                         const interval = now - stepDetector.lastStepTime;
-                        if (interval > 320 && interval < 2200) {
+                        if (interval > stepDetector.minStepInterval && interval < 2200) {
                             recordStep(now);
                         }
                     } else {
