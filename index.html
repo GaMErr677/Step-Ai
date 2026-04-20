@@ -593,6 +593,7 @@
 
         // ==================== STATE ====================
         let steps = 0;
+        let displayedSteps = 0;
         let dailySteps = {};
         let currentPeriod = '1';
         let userName = localStorage.getItem('userName') || '';
@@ -609,12 +610,15 @@
         const stepDetector = {
             accelBuffer: [],
             lastStepTime: 0,
-            minStepInterval: 240,
-            bufferSize: 12,
-            threshold: 1.2,
-            refractory: 180,
+            minStepInterval: 320,
+            bufferSize: 18,
+            threshold: 1.6,
+            refractory: 280,
             lastPeakTime: 0,
-            kalmanState: null
+            kalmanState: null,
+            motionFloor: 0.18,
+            minStdDev: 0.12,
+            minAmplitude: 0.35
         };
 
         // ==================== NAME MANAGEMENT ====================
@@ -735,7 +739,8 @@
         }
 
         function updateStepsFromAccelerometer() {
-            // This will be called every minute to update step count
+            displayedSteps = steps;
+            localStorage.setItem('displayedSteps', String(displayedSteps));
             updateUI();
         }
 
@@ -824,6 +829,10 @@
                 dailySteps[today] = 0;
             }
             steps = dailySteps[today];
+            displayedSteps = Number(localStorage.getItem('displayedSteps')) || steps;
+            if (displayedSteps > steps) {
+                displayedSteps = steps;
+            }
         }
 
         function saveData() {
@@ -992,10 +1001,25 @@
         }
 
         function handleAdvancedMotion(event) {
-            const acc = event.accelerationIncludingGravity;
-            if (!acc) return;
+            const linearAcc = event.acceleration;
+            const gravityAcc = event.accelerationIncludingGravity;
+            if (!linearAcc && !gravityAcc) return;
 
-            const magnitude = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
+            const source = linearAcc && [linearAcc.x, linearAcc.y, linearAcc.z].every(v => typeof v === 'number')
+                ? linearAcc
+                : gravityAcc;
+
+            if (!source) return;
+
+            let magnitude = Math.sqrt((source.x || 0) ** 2 + (source.y || 0) ** 2 + (source.z || 0) ** 2);
+
+            if (source === gravityAcc) {
+                magnitude = Math.abs(magnitude - 9.81);
+            }
+
+            if (magnitude < stepDetector.motionFloor) {
+                return;
+            }
             
             // Apply Kalman filter
             if (!stepDetector.kalmanState) {
@@ -1014,18 +1038,25 @@
             const mean = stepDetector.accelBuffer.reduce((a, b) => a + b) / stepDetector.accelBuffer.length;
             const variance = stepDetector.accelBuffer.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / stepDetector.accelBuffer.length;
             const stdDev = Math.sqrt(variance);
+            const amplitude = Math.max(...stepDetector.accelBuffer) - Math.min(...stepDetector.accelBuffer);
             const cadence = detectCadence(stepDetector.accelBuffer);
             const isValidCadence = !cadence || (cadence > 0.8 && cadence < 3.5);
+            const isMoving = stdDev >= stepDetector.minStdDev && amplitude >= stepDetector.minAmplitude;
+
+            if (!isMoving) {
+                return;
+            }
 
             const current = stepDetector.accelBuffer[stepDetector.accelBuffer.length - 1];
-            const isPeak = current > mean + (stepDetector.threshold * stdDev);
+            const dynamicThreshold = Math.max(stepDetector.motionFloor * 2, stepDetector.threshold * stdDev);
+            const isPeak = current > mean + dynamicThreshold;
 
             if (isPeak && isValidCadence) {
                 const now = Date.now();
                 if (now - stepDetector.lastPeakTime > stepDetector.refractory) {
                     if (stepDetector.lastStepTime > 0) {
                         const interval = now - stepDetector.lastStepTime;
-                        if (interval > 240 && interval < 2600) {
+                        if (interval > 320 && interval < 2200) {
                             recordStep(now);
                         }
                     } else {
@@ -1040,7 +1071,6 @@
             steps++;
             allTimeSteps++;
             stepDetector.lastStepTime = now;
-            updateUI();
             saveData();
         }
 
@@ -1102,7 +1132,7 @@
 
         // ==================== UI UPDATES ====================
         function updateUI() {
-            document.getElementById('stepCount').textContent = steps.toLocaleString();
+            document.getElementById('stepCount').textContent = displayedSteps.toLocaleString();
             updateTimeDisplay();
         }
 
