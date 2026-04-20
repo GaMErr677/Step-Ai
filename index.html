@@ -616,12 +616,30 @@
 
         // ==================== NAME MANAGEMENT ====================
         function saveName() {
-            const name = document.getElementById('nameInput').value.trim();
-            if (name) {
-                userName = name;
-                localStorage.setItem('userName', name);
-                document.getElementById('nameModal').style.display = 'none';
-                updateUsernameDisplay();
+            try {
+                const nameInput = document.getElementById('nameInput');
+                if (!nameInput) {
+                    console.error('Name input not found');
+                    return;
+                }
+                const name = nameInput.value.trim();
+                if (name && name.length > 0) {
+                    userName = name;
+                    localStorage.setItem('userName', name);
+                    const nameModal = document.getElementById('nameModal');
+                    if (nameModal) {
+                        nameModal.style.display = 'none';
+                    }
+                    updateUsernameDisplay();
+                    // Start the app
+                    setupMotionListener();
+                    setupTimerInterval();
+                    updateUI();
+                } else {
+                    alert('Please enter a valid name');
+                }
+            } catch (error) {
+                console.error('Error saving name:', error);
             }
         }
 
