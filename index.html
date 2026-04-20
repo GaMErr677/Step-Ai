@@ -831,10 +831,103 @@
             return bestLag > 0 ? 60 / bestLag : null;
         }
 
+        // ==================== BACKGROUND STEP COUNTER ====================
+        async function initializeBackgroundStepCounter() {
+            // Check if native APIs are available
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            
+            if (isIOS) {
+                // iOS Health Kit integration
+                if ((window as any).webkit?.messageHandlers?.requestHealthKitPermission) {
+                    try {
+                        const granted = await new Promise((resolve) => {
+                            (window as any).webkit.messageHandlers.requestHealthKitPermission.postMessage({
+                                callback: (result: boolean) => resolve(result)
+                            });
+                        });
+                        if (granted) {
+                            startHealthKitSync();
+                        }
+                    } catch (e) {
+                        console.log('Health Kit permission denied, using accelerometer only');
+                    }
+                }
+            } else if (isAndroid) {
+                // Android Google Fit integration
+                if ((window as any).android?.requestFitPermission) {
+                    try {
+                        const granted = await new Promise((resolve) => {
+                            (window as any).android.requestFitPermission((result: boolean) => resolve(result));
+                        });
+                        if (granted) {
+                            startGoogleFitSync();
+                        }
+                    } catch (e) {
+                        console.log('Google Fit permission denied, using accelerometer only');
+                    }
+                }
+            }
+        }
+        
+        function startHealthKitSync() {
+            // Sync with Health Kit every 5 minutes
+            setInterval(() => {
+                const now = new Date();
+                const startOfDay = new Date(now);
+                startOfDay.setHours(0, 0, 0, 0);
+                
+                if ((window as any).webkit?.messageHandlers?.getHealthKitSteps) {
+                    (window as any).webkit.messageHandlers.getHealthKitSteps.postMessage({
+                        startDate: startOfDay.toISOString(),
+                        endDate: now.toISOString(),
+                        callback: (healthKitSteps: number) => {
+                            if (healthKitSteps > allTimeSteps) {
+                                const difference = healthKitSteps - allTimeSteps;
+                                allTimeSteps = healthKitSteps;
+                                steps = healthKitSteps - (dailySteps[new Date().toDateString()] || 0);
+                                dailySteps[new Date().toDateString()] = healthKitSteps;
+                                updateUI();
+                                saveData();
+                            }
+                        }
+                    });
+                }
+            }, 5 * 60 * 1000);
+        }
+        
+        function startGoogleFitSync() {
+            // Sync with Google Fit every 5 minutes
+            setInterval(() => {
+                const now = new Date();
+                const startOfDay = new Date(now);
+                startOfDay.setHours(0, 0, 0, 0);
+                
+                if ((window as any).android?.getFitSteps) {
+                    (window as any).android.getFitSteps(
+                        startOfDay.getTime(),
+                        now.getTime(),
+                        (fitSteps: number) => {
+                            if (fitSteps > allTimeSteps) {
+                                const difference = fitSteps - allTimeSteps;
+                                allTimeSteps = fitSteps;
+                                steps = fitSteps - (dailySteps[new Date().toDateString()] || 0);
+                                dailySteps[new Date().toDateString()] = fitSteps;
+                                updateUI();
+                                saveData();
+                            }
+                        }
+                    );
+                }
+            }, 5 * 60 * 1000);
+        }
+
         function setupMotionListener() {
             if (window.DeviceMotionEvent) {
                 window.addEventListener('devicemotion', handleAdvancedMotion);
             }
+            // Initialize background step counter
+            initializeBackgroundStepCounter();
         }
 
         function handleAdvancedMotion(event) {
