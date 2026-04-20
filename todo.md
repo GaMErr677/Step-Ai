@@ -10,3 +10,6 @@
 - [x] Recalibrate motion thresholds to a middle ground that still avoids counting while stationary
 - [ ] Verify the visible step count still refreshes on the 1-minute timer while internal counting continues in real time
 
+- [x] Fix severe undercounting in iPhone Safari browser mode where about a minute of walking can register as only one step
+- [x] Rebalance motion-source selection and sensitivity so ordinary walking cadence is detected reliably again
+

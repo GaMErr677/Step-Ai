@@ -610,15 +610,14 @@
         const stepDetector = {
             accelBuffer: [],
             lastStepTime: 0,
-            minStepInterval: 260,
-            bufferSize: 14,
-            threshold: 1.28,
-            refractory: 220,
+            minStepInterval: 240,
+            bufferSize: 12,
+            threshold: 1.16,
+            refractory: 180,
             lastPeakTime: 0,
             kalmanState: null,
-            motionFloor: 0.06,
-            minStdDev: 0.08,
-            minAmplitude: 0.18
+            minStdDev: 0.045,
+            minAmplitude: 0.12
         };
 
         // ==================== NAME MANAGEMENT ====================
@@ -1001,23 +1000,10 @@
         }
 
         function handleAdvancedMotion(event) {
-            const linearAcc = event.acceleration;
-            const gravityAcc = event.accelerationIncludingGravity;
-            const hasLinearAcc = linearAcc && [linearAcc.x, linearAcc.y, linearAcc.z].every(v => typeof v === 'number');
-            const hasGravityAcc = gravityAcc && [gravityAcc.x, gravityAcc.y, gravityAcc.z].every(v => typeof v === 'number');
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
 
-            if (!hasLinearAcc && !hasGravityAcc) return;
-
-            const linearMagnitude = hasLinearAcc
-                ? Math.sqrt((linearAcc.x || 0) ** 2 + (linearAcc.y || 0) ** 2 + (linearAcc.z || 0) ** 2)
-                : 0;
-            const gravityMagnitude = hasGravityAcc
-                ? Math.sqrt((gravityAcc.x || 0) ** 2 + (gravityAcc.y || 0) ** 2 + (gravityAcc.z || 0) ** 2)
-                : 0;
-
-            const useLinearAcc = hasLinearAcc && linearMagnitude > 0.08;
-            const magnitude = useLinearAcc ? linearMagnitude : gravityMagnitude;
-
+            const magnitude = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2);
             if (!Number.isFinite(magnitude) || magnitude <= 0) {
                 return;
             }
@@ -1049,15 +1035,14 @@
             }
 
             const current = stepDetector.accelBuffer[stepDetector.accelBuffer.length - 1];
-            const dynamicThreshold = Math.max(stepDetector.motionFloor * 2, stepDetector.threshold * stdDev);
-            const isPeak = current > mean + dynamicThreshold;
+            const isPeak = current > mean + (stepDetector.threshold * stdDev);
 
             if (isPeak && isValidCadence) {
                 const now = Date.now();
                 if (now - stepDetector.lastPeakTime > stepDetector.refractory) {
                     if (stepDetector.lastStepTime > 0) {
                         const interval = now - stepDetector.lastStepTime;
-                        if (interval > stepDetector.minStepInterval && interval < 2200) {
+                        if (interval > stepDetector.minStepInterval && interval < 2600) {
                             recordStep(now);
                         }
                     } else {
