@@ -747,6 +747,17 @@
 
         // ==================== EVENT LISTENERS ====================
         function setupButtonListeners() {
+            // Setup Start Tracking Button
+            const startBtn = document.querySelector('button.modal-btn');
+            if (startBtn) {
+                startBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    saveName();
+                }, false);
+            }
+            
+            // Setup Install Button
             const btn = document.getElementById('installBtn');
             if (!btn) return;
             
