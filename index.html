@@ -868,11 +868,11 @@
             
             if (isIOS) {
                 // iOS Health Kit integration
-                if ((window as any).webkit?.messageHandlers?.requestHealthKitPermission) {
+                if (window.webkit?.messageHandlers?.requestHealthKitPermission) {
                     try {
                         const granted = await new Promise((resolve) => {
-                            (window as any).webkit.messageHandlers.requestHealthKitPermission.postMessage({
-                                callback: (result: boolean) => resolve(result)
+                            window.webkit.messageHandlers.requestHealthKitPermission.postMessage({
+                                callback: (result) => resolve(result)
                             });
                         });
                         if (granted) {
@@ -884,10 +884,10 @@
                 }
             } else if (isAndroid) {
                 // Android Google Fit integration
-                if ((window as any).android?.requestFitPermission) {
+                if (window.android?.requestFitPermission) {
                     try {
                         const granted = await new Promise((resolve) => {
-                            (window as any).android.requestFitPermission((result: boolean) => resolve(result));
+                            window.android.requestFitPermission((result) => resolve(result));
                         });
                         if (granted) {
                             startGoogleFitSync();
@@ -906,11 +906,11 @@
                 const startOfDay = new Date(now);
                 startOfDay.setHours(0, 0, 0, 0);
                 
-                if ((window as any).webkit?.messageHandlers?.getHealthKitSteps) {
-                    (window as any).webkit.messageHandlers.getHealthKitSteps.postMessage({
+                if (window.webkit?.messageHandlers?.getHealthKitSteps) {
+                    window.webkit.messageHandlers.getHealthKitSteps.postMessage({
                         startDate: startOfDay.toISOString(),
                         endDate: now.toISOString(),
-                        callback: (healthKitSteps: number) => {
+                        callback: (healthKitSteps) => {
                             if (healthKitSteps > allTimeSteps) {
                                 const difference = healthKitSteps - allTimeSteps;
                                 allTimeSteps = healthKitSteps;
@@ -932,11 +932,11 @@
                 const startOfDay = new Date(now);
                 startOfDay.setHours(0, 0, 0, 0);
                 
-                if ((window as any).android?.getFitSteps) {
-                    (window as any).android.getFitSteps(
+                if (window.android?.getFitSteps) {
+                    window.android.getFitSteps(
                         startOfDay.getTime(),
                         now.getTime(),
-                        (fitSteps: number) => {
+                        (fitSteps) => {
                             if (fitSteps > allTimeSteps) {
                                 const difference = fitSteps - allTimeSteps;
                                 allTimeSteps = fitSteps;
